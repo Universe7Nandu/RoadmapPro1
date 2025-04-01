@@ -7,6 +7,10 @@ from datetime import timedelta
 import pandas as pd
 from dotenv import load_dotenv
 from groq import Groq
+import requests
+from PIL import Image
+from io import BytesIO
+import base64
 
 # Load environment variables
 load_dotenv()
@@ -130,6 +134,35 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+def get_destination_image(destination_name):
+    """Fetch a relevant image for the destination using Unsplash API"""
+    try:
+        # Using Unsplash API (you'll need to add your Unsplash API key to .env)
+        unsplash_key = os.getenv("UNSPLASH_API_KEY")
+        if not unsplash_key:
+            return None
+            
+        url = f"https://api.unsplash.com/photos/random"
+        headers = {
+            "Authorization": f"Client-ID {unsplash_key}",
+            "Accept-Version": "v1"
+        }
+        params = {
+            "query": destination_name,
+            "orientation": "landscape"
+        }
+        
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            return data["urls"]["regular"]
+    except:
+        return None
+
+def format_currency(amount):
+    """Format currency with proper symbol and commas"""
+    return f"${amount:,.2f}"
+
 # Popular destinations database (simplified)
 destinations = {
     "Paris": {
@@ -137,35 +170,65 @@ destinations = {
         "description": "The City of Light famous for the Eiffel Tower, Louvre Museum, and exquisite cuisine.",
         "attractions": ["Eiffel Tower", "Louvre Museum", "Notre-Dame Cathedral", "Montmartre", "Champs-Élysées"],
         "image": "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-        "best_season": "Spring, Fall"
+        "best_season": "Spring, Fall",
+        "budget_range": {
+            "Budget": 100,
+            "Mid-range": 200,
+            "Luxury": 400,
+            "Ultra-Luxury": 800
+        }
     },
     "Tokyo": {
         "country": "Japan",
         "description": "A bustling metropolis blending ultramodern and traditional, from neon-lit skyscrapers to historic temples.",
         "attractions": ["Tokyo Tower", "Shinjuku Gyoen", "Meiji Shrine", "Shibuya Crossing", "Asakusa Temple"],
         "image": "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80",
-        "best_season": "Spring, Fall"
+        "best_season": "Spring, Fall",
+        "budget_range": {
+            "Budget": 120,
+            "Mid-range": 250,
+            "Luxury": 500,
+            "Ultra-Luxury": 1000
+        }
     },
     "New York": {
         "country": "USA",
         "description": "The Big Apple offers iconic skyscrapers, diverse neighborhoods, world-class museums, and Broadway shows.",
         "attractions": ["Empire State Building", "Central Park", "Times Square", "Statue of Liberty", "Metropolitan Museum of Art"],
         "image": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-        "best_season": "Spring, Fall"
+        "best_season": "Spring, Fall",
+        "budget_range": {
+            "Budget": 150,
+            "Mid-range": 300,
+            "Luxury": 600,
+            "Ultra-Luxury": 1200
+        }
     },
     "Bali": {
         "country": "Indonesia",
         "description": "Island paradise known for beautiful beaches, volcanic mountains, unique cultural heritage, and spiritual retreats.",
         "attractions": ["Ubud Monkey Forest", "Tanah Lot Temple", "Tegallalang Rice Terraces", "Uluwatu Temple", "Kuta Beach"],
         "image": "https://images.unsplash.com/photo-1537996194471-e657df975ab4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1038&q=80",
-        "best_season": "Dry Season (April-October)"
+        "best_season": "Dry Season (April-October)",
+        "budget_range": {
+            "Budget": 50,
+            "Mid-range": 100,
+            "Luxury": 200,
+            "Ultra-Luxury": 400
+        }
     },
     "Rome": {
         "country": "Italy",
         "description": "The Eternal City with thousands of years of history, art, and delicious cuisine at every corner.",
         "attractions": ["Colosseum", "Vatican Museums", "Trevi Fountain", "Roman Forum", "Pantheon"],
         "image": "https://images.unsplash.com/photo-1552832230-c0197dd311b5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1096&q=80",
-        "best_season": "Spring, Fall"
+        "best_season": "Spring, Fall",
+        "budget_range": {
+            "Budget": 100,
+            "Mid-range": 200,
+            "Luxury": 400,
+            "Ultra-Luxury": 800
+        }
     }
 }
 
@@ -285,8 +348,14 @@ with tab1:
                             "travel_tips": ["Research local customs", "Check visa requirements", "Book accommodations in advance"]
                         }
                 
+                    # Get destination image
+                    destination_image = get_destination_image(destination)
+                    
                     # Display destination information in a nice card layout
                     st.markdown(f"## {destination_info['destination_name']}, {destination_info['country']}")
+                    
+                    if destination_image:
+                        st.image(destination_image, use_column_width=True, caption=f"Beautiful {destination_info['destination_name']}")
                     
                     col1, col2 = st.columns([1, 1])
                     
@@ -331,6 +400,7 @@ with tab1:
                                 st.markdown(f"- {attraction}")
                         
                         st.markdown(f"**Best Time to Visit:** {info['best_season']}")
+                        st.markdown(f"**Daily Budget:** {format_currency(info['budget_range'][budget_range])}")
 
 with tab2:
     st.markdown("## Plan Your Perfect Itinerary")
@@ -666,9 +736,13 @@ with tab3:
                     col = col1 if i % 2 == 0 else col2
                     
                     with col:
+                        # Get image for the destination
+                        destination_image = get_destination_image(inspiration["image_keyword"])
+                        
                         st.markdown(f"""
                         <div style="background-color: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 1rem; animation: fadeIn 0.5s ease-out forwards {i*0.2}s;">
                             <h3>{inspiration['name']}, {inspiration['location']}</h3>
+                            {f'<img src="{destination_image}" style="width: 100%; border-radius: 8px; margin-bottom: 1rem;">' if destination_image else ''}
                             <p style="font-style: italic;">{inspiration['description']}</p>
                             <p><strong>Highlight:</strong> {inspiration['main_attraction']}</p>
                             <p><strong>Best Time:</strong> {inspiration['best_time']}</p>
