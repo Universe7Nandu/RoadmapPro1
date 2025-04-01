@@ -11,6 +11,12 @@ import requests
 from PIL import Image
 from io import BytesIO
 import base64
+from streamlit_option_menu import option_menu
+import streamlit_authenticator as stauth
+import yaml
+from yaml.loader import SafeLoader
+import plotly.express as px
+import time
 
 # Load environment variables
 load_dotenv()
@@ -20,7 +26,7 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # Set page configuration
 st.set_page_config(
-    page_title="TravelGenius AI",
+    page_title="Travel Planner Pro",
     page_icon="✈️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -234,8 +240,8 @@ destinations = {
 
 # Sidebar content
 with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/null/airplane-take-off.png", width=80)
-    st.title("TravelGenius AI")
+    st.image("https://img.icons8.com/color/96/000000/airplane-mode-on.png", width=100)
+    st.title("Travel Planner Pro")
     st.markdown("---")
     st.markdown("### Your AI Travel Assistant")
     st.markdown("Plan your perfect vacation with AI-powered recommendations and personalized itineraries.")
@@ -791,3 +797,158 @@ st.markdown("""
     <p>© 2023 TravelGenius AI. Your journey, our expertise.</p>
 </div>
 """, unsafe_allow_html=True)
+
+# Load authentication config
+with open('config.yaml') as file:
+    config = yaml.load(file, Loader=SafeLoader)
+
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days'],
+    config['preauthorized']
+)
+
+# Sidebar navigation
+with st.sidebar:
+    st.image("https://img.icons8.com/color/96/000000/airplane-mode-on.png", width=100)
+    st.title("Travel Planner Pro")
+    
+    selected = option_menu(
+        menu_title=None,
+        options=["Home", "Plan Trip", "My Itineraries", "About"],
+        icons=["house", "airplane", "calendar", "info-circle"],
+        menu_icon="cast",
+        default_index=0,
+    )
+
+# Authentication
+name, authentication_status, username = authenticator.login('Login', 'main')
+
+if authentication_status:
+    authenticator.logout('Logout', 'main')
+    st.write(f'Welcome *{name}*')
+    
+    if selected == "Home":
+        st.title("Welcome to Travel Planner Pro ✈️")
+        st.markdown("""
+        <div style='background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
+            <h2>Your AI-Powered Travel Companion</h2>
+            <p>Plan your perfect trip with personalized recommendations and smart itinerary generation.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric(label="Destinations", value="100+")
+        with col2:
+            st.metric(label="AI Recommendations", value="24/7")
+        with col3:
+            st.metric(label="Happy Travelers", value="10K+")
+            
+    elif selected == "Plan Trip":
+        st.title("Plan Your Perfect Trip 🗺️")
+        
+        # Trip Planning Form
+        with st.form("trip_planning_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                destination = st.text_input("Destination", placeholder="e.g., Paris, France")
+                start_date = st.date_input("Start Date", min_value=datetime.now().date())
+                duration = st.number_input("Duration (days)", min_value=1, max_value=30, value=7)
+            with col2:
+                budget = st.selectbox("Budget Range", ["Budget", "Moderate", "Luxury"])
+                travel_style = st.selectbox("Travel Style", ["Adventure", "Relaxation", "Culture", "Food"])
+                interests = st.multiselect("Interests", ["Art", "History", "Nature", "Food", "Shopping", "Nightlife"])
+            
+            submitted = st.form_submit_button("Generate Itinerary")
+            
+            if submitted:
+                with st.spinner("Generating your personalized itinerary..."):
+                    # Prepare prompt for Groq
+                    prompt = f"""
+                    Create a detailed {duration}-day travel itinerary for {destination} with a {budget} budget.
+                    Travel style: {travel_style}
+                    Interests: {', '.join(interests)}
+                    Start date: {start_date}
+                    
+                    Please provide:
+                    1. Daily schedule with specific times
+                    2. Recommended attractions and activities
+                    3. Restaurant suggestions
+                    4. Transportation tips
+                    5. Budget breakdown
+                    """
+                    
+                    # Generate itinerary using Groq
+                    chat_completion = client.chat.completions.create(
+                        messages=[
+                            {"role": "system", "content": "You are a professional travel planner with expertise in creating detailed itineraries."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        model="mixtral-8x7b-32768",
+                        temperature=0.7,
+                    )
+                    
+                    itinerary = chat_completion.choices[0].message.content
+                    
+                    # Display itinerary in a beautiful format
+                    st.markdown("""
+                        <div style='background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
+                            <h2>Your Personalized Itinerary</h2>
+                            <div style='white-space: pre-wrap;'>
+                                {}
+                            </div>
+                        </div>
+                    """.format(itinerary), unsafe_allow_html=True)
+                    
+                    # Save itinerary
+                    if 'itineraries' not in st.session_state:
+                        st.session_state.itineraries = []
+                    
+                    st.session_state.itineraries.append({
+                        'destination': destination,
+                        'start_date': start_date,
+                        'duration': duration,
+                        'itinerary': itinerary
+                    })
+                    
+    elif selected == "My Itineraries":
+        st.title("My Saved Itineraries 📋")
+        
+        if 'itineraries' in st.session_state and st.session_state.itineraries:
+            for idx, itinerary in enumerate(st.session_state.itineraries):
+                with st.expander(f"Trip to {itinerary['destination']} ({itinerary['start_date']})"):
+                    st.markdown(itinerary['itinerary'])
+                    if st.button("Delete Itinerary", key=f"delete_{idx}"):
+                        st.session_state.itineraries.pop(idx)
+                        st.experimental_rerun()
+        else:
+            st.info("No saved itineraries yet. Start planning your trip!")
+            
+    elif selected == "About":
+        st.title("About Travel Planner Pro ℹ️")
+        st.markdown("""
+        <div style='background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
+            <h2>Your AI-Powered Travel Companion</h2>
+            <p>Travel Planner Pro is an advanced travel planning platform that uses artificial intelligence to create personalized travel itineraries. Our platform combines the power of AI with real-time travel data to provide you with the best possible travel recommendations.</p>
+            
+            <h3>Features</h3>
+            <ul>
+                <li>AI-powered itinerary generation</li>
+                <li>Personalized travel recommendations</li>
+                <li>Budget optimization</li>
+                <li>Interactive travel planning</li>
+                <li>Real-time travel data integration</li>
+            </ul>
+            
+            <h3>Contact</h3>
+            <p>For any questions or support, please contact us at support@travelplannerpro.com</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+elif authentication_status == False:
+    st.error('Username/password is incorrect')
+elif authentication_status == None:
+    st.warning('Please enter your username and password')
