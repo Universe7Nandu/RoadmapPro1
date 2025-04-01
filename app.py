@@ -10,6 +10,12 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 from prophet import Prophet
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import time
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Set page config
 st.set_page_config(
@@ -19,56 +25,280 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for modern UI
+# Custom CSS for modern, colorful UI with background effects
 st.markdown("""
 <style>
+    /* Modern Gradient Background with Animation */
+    .stApp {
+        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
+    }
+    
+    @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    /* Main Header Styling */
     .main-header {
-        font-size: 2.5rem;
-        color: #1E88E5;
-        font-weight: 700;
-        margin-bottom: 1rem;
+        font-size: 3.2rem;
+        font-weight: 800;
+        background: linear-gradient(to right, #8a2387, #e94057, #f27121);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+        margin-bottom: 1.5rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        font-family: 'Helvetica Neue', sans-serif;
     }
+    
+    /* Sub Header Styling */
     .sub-header {
-        font-size: 1.5rem;
-        color: #42A5F5;
-        font-weight: 500;
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #ffffff;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        margin-bottom: 0.8rem;
     }
+    
+    /* Card Styling with Glassmorphism effect */
     .card {
-        background-color: #f9f9f9;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        margin-bottom: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Metric Container Styling */
     .metric-container {
         display: flex;
         justify-content: space-between;
         flex-wrap: wrap;
+        gap: 15px;
     }
+    
+    /* Metric Card Styling */
     .metric-card {
-        background-color: white;
-        border-radius: 8px;
-        padding: 15px;
-        margin: 5px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
         flex: 1;
-        min-width: 120px;
+        min-width: 140px;
         text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        transition: transform 0.2s ease;
     }
+    
+    .metric-card:hover {
+        transform: scale(1.03);
+    }
+    
     .metric-value {
-        font-size: 1.8rem;
+        font-size: 2rem;
         font-weight: 700;
-        color: #1976D2;
+        background: linear-gradient(to right, #396afc, #2948ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 5px;
     }
+    
     .metric-name {
-        font-size: 0.9rem;
-        color: #666;
+        font-size: 1rem;
+        color: #4a4a4a;
+        font-weight: 500;
+    }
+    
+    /* Button Styling */
+    .stButton > button {
+        background: linear-gradient(to right, #4776E6, #8E54E9);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 24px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(to right, #3a61c3, #7644c6);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Tab Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px 8px 0 0;
+        padding: 10px 24px;
+        background-color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        font-weight: 600;
+    }
+    
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background: rgba(30, 30, 30, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    [data-testid="stSidebar"] .sub-header {
+        color: #ffffff;
+    }
+    
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+        color: #e0e0e0;
+    }
+    
+    /* Widget Label Styling */
+    .stSlider label, .stSelectbox label, .stDateInput label {
+        color: #f0f0f0 !important;
+        font-weight: 500;
+    }
+    
+    /* Table styling */
+    .stDataFrame {
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    /* AI insights card */
+    .ai-insights-card {
+        background: linear-gradient(135deg, rgba(98, 0, 234, 0.6), rgba(236, 64, 122, 0.6));
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        margin-bottom: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+    
+    .ai-insights-header {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    /* Custom animation for loading effect */
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    
+    .loading-pulse {
+        animation: pulse 1.5s infinite ease-in-out;
     }
 </style>
+
+<!-- Add animated particles background -->
+<div id="particles-js" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;"></div>
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        particlesJS("particles-js", {
+            "particles": {
+                "number": {
+                    "value": 80,
+                    "density": {
+                        "enable": true,
+                        "value_area": 800
+                    }
+                },
+                "color": {
+                    "value": "#ffffff"
+                },
+                "shape": {
+                    "type": "circle",
+                    "stroke": {
+                        "width": 0,
+                        "color": "#000000"
+                    },
+                },
+                "opacity": {
+                    "value": 0.3,
+                    "random": false,
+                },
+                "size": {
+                    "value": 3,
+                    "random": true,
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": "#ffffff",
+                    "opacity": 0.2,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 2,
+                    "direction": "none",
+                    "random": false,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false,
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": {
+                        "enable": true,
+                        "mode": "grab"
+                    },
+                    "onclick": {
+                        "enable": true,
+                        "mode": "push"
+                    },
+                    "resize": true
+                },
+                "modes": {
+                    "grab": {
+                        "distance": 140,
+                        "line_linked": {
+                            "opacity": 0.8
+                        }
+                    },
+                    "push": {
+                        "particles_nb": 4
+                    }
+                }
+            },
+            "retina_detect": true
+        });
+    });
+</script>
 """, unsafe_allow_html=True)
 
 # App title
-st.markdown('<div class="main-header">Financial Time Series Analysis & Forecasting</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">Financial Time Series Analyzer</div>', unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
@@ -103,6 +333,24 @@ with st.sidebar:
                 seasonal_q = st.slider("Seasonal Q", 0, 2, 1)
                 s = st.slider("Seasonal Period", [7, 12, 24, 30, 52], 12)
     
+    # Add AI Assistant Section
+    st.markdown("---")
+    st.markdown('<div class="sub-header">AI Assistant</div>', unsafe_allow_html=True)
+    
+    ai_enabled = st.checkbox("Enable Groq AI Insights", value=True)
+    
+    if ai_enabled:
+        if not GROQ_API_KEY:
+            st.warning("Groq API Key not configured. Add it to your .env file to enable AI insights.")
+        else:
+            st.success("Groq AI insights enabled!")
+            
+        ai_model = st.selectbox(
+            "Select Groq Model", 
+            ["llama3-8b-8192", "llama3-70b-8192", "mixtral-8x7b-32768"], 
+            index=0
+        )
+    
     run_analysis = st.button("Run Analysis", use_container_width=True)
 
 # Main content
@@ -119,13 +367,68 @@ def load_data():
             data = pd.read_csv(uploaded_file)
             data[date_column] = pd.to_datetime(data[date_column])
             data.set_index(date_column, inplace=True)
-            if isinstance(data.index, pd.DatetimeIndex) is False:
+            if not isinstance(data.index, pd.DatetimeIndex):
                 st.error("The selected date column could not be converted to datetime format")
                 return None
             load_time_ms = (time.time() - start_time) * 1000
             st.session_state.load_time_ms = load_time_ms
             return data
         return None
+
+def generate_groq_insights(df, forecast, model_type):
+    """Generate AI insights using Groq API"""
+    if not GROQ_API_KEY or not ai_enabled:
+        return "AI insights are disabled or Groq API key is not configured. Add it to your .env file."
+    
+    try:
+        import groq
+        
+        # Initialize Groq client
+        client = groq.Client(api_key=GROQ_API_KEY)
+        
+        # Extract key statistics from data
+        latest_price = df['Close'].iloc[-1]
+        price_change = (df['Close'].iloc[-1] - df['Close'].iloc[0]) / df['Close'].iloc[0] * 100
+        avg_volume = df['Volume'].mean() if 'Volume' in df.columns else "N/A"
+        volatility = df['Close'].pct_change().std() * 100
+        forecast_change = (forecast[-1] - latest_price) / latest_price * 100
+        
+        # Create prompt for the Groq API
+        prompt = f"""
+        As a financial analyst, provide a brief but insightful analysis based on the following data:
+        
+        Ticker: {ticker if data_source == 'Yahoo Finance' else 'Custom data'}
+        Date Range: {df.index.min().date()} to {df.index.max().date()}
+        Current Price: ${latest_price:.2f}
+        Overall Price Change: {price_change:.2f}%
+        Volatility (Std Dev of Returns): {volatility:.2f}%
+        Average Volume: {avg_volume}
+        
+        Forecast Model Used: {model_type}
+        Forecast Prediction ({forecast_days} days): Ending at ${forecast[-1]:.2f} ({forecast_change:.2f}%)
+        
+        Please provide:
+        1. A concise trend analysis (2-3 sentences)
+        2. Key risk factors to watch (1-2 points)
+        3. A brief investment recommendation
+        
+        Keep the entire response under 200 words and in the same format as requested.
+        """
+        
+        # Call Groq API
+        response = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": "You are a financial analyst providing concise, data-driven insights."},
+                {"role": "user", "content": prompt}
+            ],
+            model=ai_model,
+            max_tokens=400
+        )
+        
+        return response.choices[0].message.content
+    
+    except Exception as e:
+        return f"AI insights error: {str(e)}"
 
 def train_forecast_model(df, column='Close'):
     """Train a time series model and generate forecasts."""
@@ -170,7 +473,6 @@ def train_forecast_model(df, column='Close'):
     # Calculate error metrics on a validation set (last 20% of data)
     validation_size = int(len(train_data) * 0.2)
     if validation_size > 0:
-        # Use the model to predict the validation set
         if model_type == "ARIMA":
             history = train_data[:-validation_size]
             model = ARIMA(history, order=(p, d, q))
@@ -184,6 +486,10 @@ def train_forecast_model(df, column='Close'):
             model_fit = model.fit(disp=False)
             validation_pred = model_fit.forecast(steps=validation_size)
         elif model_type == "Prophet":
+            prophet_data = pd.DataFrame({
+                'ds': df.index,
+                'y': df[column]
+            })
             history = prophet_data.iloc[:-validation_size]
             model = Prophet(daily_seasonality=True, yearly_seasonality=True)
             model.fit(history)
@@ -219,7 +525,7 @@ def plot_data_and_forecast(df, forecast_dates, forecast, column='Close'):
         y=df[column],
         mode='lines',
         name='Historical Data',
-        line=dict(color='#1E88E5', width=2)
+        line=dict(color='#4361EE', width=2)
     ))
     
     # Add forecast
@@ -228,7 +534,7 @@ def plot_data_and_forecast(df, forecast_dates, forecast, column='Close'):
         y=forecast,
         mode='lines',
         name='Forecast',
-        line=dict(color='#FF5722', width=2, dash='dash')
+        line=dict(color='#F72585', width=2, dash='dash')
     ))
     
     # Add confidence intervals (simplified approach)
@@ -241,7 +547,7 @@ def plot_data_and_forecast(df, forecast_dates, forecast, column='Close'):
         y=upper_bound,
         fill=None,
         mode='lines',
-        line=dict(color='rgba(255, 87, 34, 0)'),
+        line=dict(color='rgba(247, 37, 133, 0)'),
         showlegend=False
     ))
     
@@ -250,8 +556,8 @@ def plot_data_and_forecast(df, forecast_dates, forecast, column='Close'):
         y=lower_bound,
         fill='tonexty',
         mode='lines',
-        line=dict(color='rgba(255, 87, 34, 0)'),
-        fillcolor='rgba(255, 87, 34, 0.2)',
+        line=dict(color='rgba(247, 37, 133, 0)'),
+        fillcolor='rgba(247, 37, 133, 0.2)',
         name='95% Confidence Interval'
     ))
     
@@ -261,7 +567,7 @@ def plot_data_and_forecast(df, forecast_dates, forecast, column='Close'):
         xaxis_title="Date",
         yaxis_title=column,
         hovermode="x unified",
-        template="plotly_white",
+        template="plotly_dark",
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -269,7 +575,10 @@ def plot_data_and_forecast(df, forecast_dates, forecast, column='Close'):
             xanchor="right",
             x=1
         ),
-        height=500
+        height=500,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0.05)',
+        font=dict(color='white')
     )
     
     return fig
@@ -279,72 +588,87 @@ def plot_seasonal_decomposition(df, column='Close'):
     from statsmodels.tsa.seasonal import seasonal_decompose
     
     # Ensure we have enough data
-    if len(df) < 2 * 12:  # Minimum 2 cycles for seasonal decomposition
+    if len(df) < 24:
         return None
     
-    # Resample to ensure regular frequency if needed
+    # Resample if needed
     if not pd.infer_freq(df.index):
         df_resampled = df.resample('D').mean().fillna(method='ffill')
     else:
         df_resampled = df
     
-    # Determine period based on data frequency
+    # Determine period based on frequency
     if pd.infer_freq(df_resampled.index) in ['D', 'B']:
-        period = 7  # Weekly seasonality for daily data
+        period = 7
     else:
-        period = 12  # Monthly seasonality
+        period = 12
     
     result = seasonal_decompose(df_resampled[column], model='additive', period=period)
     
-    # Create subplots
-    fig = px.figure(figsize=(10, 10))
+    from plotly.subplots import make_subplots
+    fig = make_subplots(rows=4, cols=1, 
+                        subplot_titles=("Original", "Trend", "Seasonality", "Residuals"),
+                        shared_xaxes=True)
     
-    # Original
-    ax1 = fig.add_subplot(411)
-    ax1.plot(result.observed)
-    ax1.set_title('Original')
+    fig.add_trace(
+        go.Scatter(x=result.observed.index, y=result.observed, name="Original", line=dict(color="#4CC9F0")),
+        row=1, col=1
+    )
     
-    # Trend
-    ax2 = fig.add_subplot(412)
-    ax2.plot(result.trend)
-    ax2.set_title('Trend')
+    fig.add_trace(
+        go.Scatter(x=result.trend.index, y=result.trend, name="Trend", line=dict(color="#4361EE")),
+        row=2, col=1
+    )
     
-    # Seasonal
-    ax3 = fig.add_subplot(413)
-    ax3.plot(result.seasonal)
-    ax3.set_title('Seasonality')
+    fig.add_trace(
+        go.Scatter(x=result.seasonal.index, y=result.seasonal, name="Seasonality", line=dict(color="#3A0CA3")),
+        row=3, col=1
+    )
     
-    # Residual
-    ax4 = fig.add_subplot(414)
-    ax4.plot(result.resid)
-    ax4.set_title('Residuals')
+    fig.add_trace(
+        go.Scatter(x=result.resid.dropna().index, y=result.resid.dropna(), name="Residuals", line=dict(color="#F72585")),
+        row=4, col=1
+    )
     
-    fig.tight_layout()
+    fig.update_layout(
+        height=800, 
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0.05)',
+        font=dict(color='white')
+    )
+    
     return fig
 
 def plot_distribution(df, column='Close'):
     """Plot the distribution of returns."""
     returns = df[column].pct_change().dropna()
     
-    # Create histogram with KDE
     fig = px.histogram(returns, x=returns, nbins=50, histnorm='probability density', 
                        title=f"{column} Returns Distribution")
     
-    # Add KDE
+    from scipy.stats import gaussian_kde
+    kde = gaussian_kde(returns)
+    x_vals = np.linspace(returns.min(), returns.max(), 100)
+    y_vals = kde(x_vals)
+    
     fig.add_trace(go.Scatter(
-        x=np.linspace(returns.min(), returns.max(), 100),
-        y=pd.Series(returns).plot.kde().evaluate(np.linspace(returns.min(), returns.max(), 100)),
+        x=x_vals,
+        y=y_vals,
         mode='lines',
         name='KDE',
-        line=dict(color='red', width=2)
+        line=dict(color='#F72585', width=2)
     ))
     
     fig.update_layout(
         xaxis_title="Returns",
         yaxis_title="Density",
-        template="plotly_white",
+        template="plotly_dark",
         showlegend=True,
-        height=400
+        height=400,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0.05)',
+        font=dict(color='white')
     )
     
     return fig
@@ -362,12 +686,10 @@ if st.session_state.run_clicked:
             df = load_data()
             
             if df is not None:
-                # Select the column to forecast (default to 'Close' for Yahoo Finance)
+                # Select the column to forecast
                 target_column = 'Close' if data_source == 'Yahoo Finance' else value_column
                 
                 st.markdown('<div class="card">', unsafe_allow_html=True)
-                
-                # Display data info
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.metric("Data Points", len(df))
@@ -382,14 +704,13 @@ if st.session_state.run_clicked:
                     else:
                         latest_value = df[target_column].iloc[-1]
                         st.metric("Latest Value", f"{latest_value:.2f}")
-                
                 st.markdown('</div>', unsafe_allow_html=True)
                 
                 # Generate forecasts
                 forecast_dates, forecast = train_forecast_model(df, target_column)
                 
-                # Display tabs for different visualizations
-                tab1, tab2, tab3, tab4 = st.tabs(["Forecast", "Historical Analysis", "Metrics", "Data"])
+                # Display tabs for visualizations
+                tab1, tab2, tab3, tab4, tab5 = st.tabs(["Forecast", "Historical Analysis", "Metrics", "Data", "AI Insights"])
                 
                 with tab1:
                     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -403,156 +724,87 @@ if st.session_state.run_clicked:
                     
                     # Rolling statistics
                     st.subheader("Rolling Statistics")
-                    rolling_window = st.slider("Rolling Window (days)", 5, 100, 20)
+                    rolling_window = st.slider("Rolling Window (days)", 5, 100, 20, key="rolling_window")
                     
                     rolling_fig = go.Figure()
                     rolling_fig.add_trace(go.Scatter(
                         x=df.index,
                         y=df[target_column],
                         mode='lines',
-                        name=target_column
+                        name=target_column,
+                        line=dict(color='#4CC9F0')
+                    ))
+                    rolling_mean = df[target_column].rolling(window=rolling_window).mean()
+                    rolling_std = df[target_column].rolling(window=rolling_window).std()
+                    
+                    rolling_fig.add_trace(go.Scatter(
+                        x=df.index,
+                        y=rolling_mean,
+                        mode='lines',
+                        name='Rolling Mean',
+                        line=dict(color='#F72585', width=2)
                     ))
                     rolling_fig.add_trace(go.Scatter(
                         x=df.index,
-                        y=df[target_column].rolling(rolling_window).mean(),
+                        y=rolling_std,
                         mode='lines',
-                        name=f'{rolling_window}-day MA',
-                        line=dict(color='orange')
+                        name='Rolling Std',
+                        line=dict(color='#4361EE', width=2)
                     ))
-                    rolling_fig.add_trace(go.Scatter(
-                        x=df.index,
-                        y=df[target_column].rolling(rolling_window).std(),
-                        mode='lines',
-                        name=f'{rolling_window}-day Std Dev',
-                        line=dict(color='green')
-                    ))
+                    
                     rolling_fig.update_layout(
-                        title=f"Rolling Statistics (Window: {rolling_window} days)",
-                        xaxis_title="Date",
-                        yaxis_title="Value",
-                        template="plotly_white",
-                        height=400
+                        title='Rolling Statistics',
+                        xaxis_title='Date',
+                        yaxis_title=target_column,
+                        template='plotly_dark',
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0.05)',
+                        font=dict(color='white')
                     )
                     st.plotly_chart(rolling_fig, use_container_width=True)
                     
-                    # Returns distribution
+                    # Seasonal Decomposition
+                    st.subheader("Seasonal Decomposition")
+                    decomposition_fig = plot_seasonal_decomposition(df, target_column)
+                    if decomposition_fig:
+                        st.plotly_chart(decomposition_fig, use_container_width=True)
+                    else:
+                        st.write("Not enough data for seasonal decomposition.")
+                    
+                    # Distribution Plot
                     st.subheader("Returns Distribution")
-                    returns_fig = plot_distribution(df, target_column)
-                    st.plotly_chart(returns_fig, use_container_width=True)
+                    distribution_fig = plot_distribution(df, target_column)
+                    st.plotly_chart(distribution_fig, use_container_width=True)
                     
                     st.markdown('</div>', unsafe_allow_html=True)
                 
                 with tab3:
                     st.markdown('<div class="card">', unsafe_allow_html=True)
-                    st.markdown('<div class="sub-header">Performance Metrics</div>', unsafe_allow_html=True)
-                    
-                    # Display metrics
-                    metric_col1, metric_col2 = st.columns(2)
-                    
-                    with metric_col1:
-                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-                        
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-value">{st.session_state.load_time_ms:.2f} ms</div>
-                            <div class="metric-name">Data Load Time</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-value">{st.session_state.processing_time_ms:.2f} ms</div>
-                            <div class="metric-name">Processing Time</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                        
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    with metric_col2:
-                        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-                        
-                        for metric_name, metric_value in st.session_state.error_metrics.items():
-                            if isinstance(metric_value, str):
-                                value_display = metric_value
-                            else:
-                                value_display = f"{metric_value:.4f}"
-                                
-                            st.markdown(f'''
-                            <div class="metric-card">
-                                <div class="metric-value">{value_display}</div>
-                                <div class="metric-name">{metric_name}</div>
-                            </div>
-                            ''', unsafe_allow_html=True)
-                        
-                        st.markdown('</div>', unsafe_allow_html=True)
-                    
+                    st.markdown('<div class="sub-header">Error Metrics & Performance</div>', unsafe_allow_html=True)
+                    metrics = st.session_state.error_metrics
+                    st.write("**Mean Absolute Error (MAE):**", f"{metrics['MAE']:.4f}")
+                    st.write("**Mean Squared Error (MSE):**", f"{metrics['MSE']:.4f}")
+                    st.write("**Root Mean Squared Error (RMSE):**", f"{metrics['RMSE']:.4f}")
+                    st.write("**Mean Absolute Percentage Error (MAPE):**", metrics['MAPE'])
+                    st.markdown("---")
+                    st.write("**Data Load Time:**", f"{st.session_state.load_time_ms:.2f} ms")
+                    st.write("**Model Processing Time:**", f"{st.session_state.processing_time_ms:.2f} ms")
                     st.markdown('</div>', unsafe_allow_html=True)
                 
                 with tab4:
                     st.markdown('<div class="card">', unsafe_allow_html=True)
-                    st.subheader("Data Preview")
-                    st.dataframe(df.head(100), use_container_width=True)
-                    
-                    # Download options
-                    st.download_button(
-                        label="Download Data as CSV",
-                        data=df.to_csv(),
-                        file_name=f"{'stock_data' if data_source == 'Yahoo Finance' else 'custom_data'}.csv",
-                        mime="text/csv"
-                    )
+                    st.markdown('<div class="sub-header">Data Preview</div>', unsafe_allow_html=True)
+                    st.dataframe(df.head(100))
                     st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                if data_source == "Upload CSV":
-                    st.error("Please upload a CSV file with valid time series data.")
-                else:
-                    st.error(f"Could not load data for ticker {ticker}. Please check the symbol.")
+                
+                with tab5:
+                    st.markdown('<div class="card ai-insights-card">', unsafe_allow_html=True)
+                    st.markdown('<div class="ai-insights-header">AI Insights</div>', unsafe_allow_html=True)
+                    if ai_enabled and GROQ_API_KEY:
+                        insights = generate_groq_insights(df, forecast, model_type)
+                        st.write(insights)
+                    else:
+                        st.write("AI insights are disabled or API key is missing.")
+                    st.markdown('</div>', unsafe_allow_html=True)
         except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
-else:
-    # Display welcome content
-    st.markdown("""
-    <div class="card" style="text-align: center; padding: 40px;">
-        <h2>Welcome to the Financial Time Series Analyzer</h2>
-        <p>A powerful tool for analyzing and forecasting financial time series data with sub-millisecond processing.</p>
-        <ul style="text-align: left; display: inline-block;">
-            <li>Load stock data from Yahoo Finance or upload your own CSV</li>
-            <li>Apply advanced forecasting algorithms (ARIMA, SARIMA, Prophet)</li>
-            <li>Visualize time series patterns and seasonality</li>
-            <li>Get detailed performance metrics and error analysis</li>
-        </ul>
-        <p style="margin-top: 20px;">Configure your analysis in the sidebar and click "Run Analysis" to begin.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Sample visualizations
-    st.markdown('<div class="sub-header" style="margin-top: 30px;">Sample Visualization</div>', unsafe_allow_html=True)
-    
-    # Generate sample data
-    np.random.seed(42)
-    dates = pd.date_range(start='2020-01-01', periods=365)
-    trend = np.linspace(100, 150, 365)
-    seasonality = 10 * np.sin(np.linspace(0, 4*np.pi, 365))
-    noise = np.random.normal(0, 5, 365)
-    sample_data = trend + seasonality + noise
-    
-    sample_df = pd.DataFrame({
-        'Date': dates,
-        'Value': sample_data
-    }).set_index('Date')
-    
-    # Sample plot
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=sample_df.index, 
-        y=sample_df['Value'],
-        mode='lines',
-        name='Sample Data',
-        line=dict(color='#1E88E5', width=2)
-    ))
-    
-    fig.update_layout(
-        title="Sample Financial Time Series Data",
-        xaxis_title="Date",
-        yaxis_title="Value",
-        template="plotly_white",
-        height=400
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
+            st.error(f"An error occurred during analysis: {str(e)}")
