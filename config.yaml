@@ -1,0 +1,13 @@
+credentials:
+  usernames:
+    admin:
+      email: admin@travelplannerpro.com
+      name: Admin User
+      password: $2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW  # password: admin123
+cookie:
+  expiry_days: 30
+  key: travel_planner_pro_signature
+  name: travel_planner_pro_cookie
+preauthorized:
+  emails:
+    - admin@travelplannerpro.com 
