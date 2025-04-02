@@ -696,7 +696,7 @@ elif st.session_state.page == "explore":
             col1, col2 = st.columns([1, 2])
             
             with col1:
-                st.image(data["image"], use_column_width=True)
+                st.image(data["image"],  use_container_width=True)
             
             with col2:
                 st.subheader(dest)
@@ -761,7 +761,7 @@ elif st.session_state.page == "itinerary":
             dest = st.session_state.selected_destination
             data = TRAVEL_DATA[dest]
             
-            st.image(data["image"], use_column_width=True)
+            st.image(data["image"],  use_container_width=True)
             st.markdown(f"### About {dest}")
             st.markdown(data["description"])
             
