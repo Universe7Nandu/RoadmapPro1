@@ -322,7 +322,7 @@ if st.session_state.page == "home":
     
     for i, (dest, info) in enumerate(list(TRAVEL_DATA.items())[:3]):
         with featured_cols[i]:
-            st.image(info["image"], use_column_width=True)
+            st.image(info["image"], use_container_width=True)
             st.markdown(f"**{dest}**")
             st.markdown(f"{info['description'][:100]}...")
             if st.button(f"Explore {dest}", key=f"feat_{dest}"):
