@@ -9,11 +9,19 @@ from langchain_groq import ChatGroq
 from langchain.schema import HumanMessage, SystemMessage
 from langchain.memory import ConversationBufferMemory
 from sentence_transformers import SentenceTransformer
-from PyPDF2 import PdfReader
+from PyPDF2 import PdfReader, PdfWriter
 import os
 import json
 import random
+import io
 from datetime import datetime, timedelta
+import base64
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.lib.units import inch
 
 # Travel destinations data
 TRAVEL_DATA = {
@@ -76,77 +84,158 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main {
-        background-color: #f5f7f9;
+        background-color: #f8f9fa;
     }
     .stApp {
-        font-family: 'Roboto', sans-serif;
+        font-family: 'Poppins', sans-serif;
     }
     .destination-card {
         background-color: white;
-        border-radius: 10px;
-        padding: 20px;
-        margin: 10px 0;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        transition: transform 0.3s ease;
+        border-radius: 15px;
+        padding: 25px;
+        margin: 15px 0;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border: 1px solid #f0f0f0;
     }
     .destination-card:hover {
-        transform: translateY(-5px);
+        transform: translateY(-8px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        border-color: #e1e1e1;
     }
     .highlight-text {
         color: #FF5722;
-        font-weight: bold;
+        font-weight: 600;
     }
     .info-box {
         background-color: #E3F2FD;
         border-left: 5px solid #2196F3;
-        padding: 15px;
-        border-radius: 3px;
-        margin: 10px 0;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 15px 0;
     }
     .chat-message-user {
-        background-color: #E8F5E9;
-        padding: 10px 15px;
-        border-radius: 15px 15px 0 15px;
-        margin: 5px 0;
+        background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+        padding: 12px 18px;
+        border-radius: 18px 18px 0 18px;
+        margin: 10px 0;
         max-width: 80%;
         align-self: flex-end;
         margin-left: auto;
-        color: #1B5E20;
+        color: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     .chat-message-ai {
-        background-color:#fff;
-        padding: 10px 15px;
-        border-radius: 15px 15px 15px 0;
-        margin: 5px 0;
+        background: linear-gradient(135deg, #7e57c2 0%, #5e35b1 100%);
+        padding: 12px 18px;
+        border-radius: 18px 18px 18px 0;
+        margin: 10px 0;
         max-width: 80%;
         align-self: flex-start;
         margin-right: auto;
-        color: #4A148C;
-    }
-    .itinerary-day {
-        background-color: #FAFAFA;
-        border-left: 4px solid #9C27B0;
-        padding: 15px;
-        margin: 10px 0;
-        border-radius: 4px;
-    }
-    .feature-card {
-        background-color: white;
-        border-radius: 8px;
-        padding: 20px;
-        height: 100%;
+        color: white;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
+    .itinerary-day {
+        background-color: white;
+        border-left: 5px solid #ff6d00;
+        padding: 20px;
+        margin: 15px 0;
+        border-radius: 8px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+    .feature-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        height: 100%;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: transform 0.3s ease;
+        border: 1px solid #f0f0f0;
+    }
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
     .hero-section {
-        padding: 40px 0;
+        padding: 60px 20px;
         text-align: center;
-        background: linear-gradient(135deg, #6B73FF 10%, #000DFF 100%);
+        background: linear-gradient(135deg, #3f51b5 0%, #2196f3 100%);
         color: white;
-        border-radius: 10px;
-        margin-bottom: 30px;
+        border-radius: 15px;
+        margin-bottom: 40px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     }
     .tab-content {
-        padding: 20px 0;
+        padding: 25px 0;
+    }
+    
+    .stButton>button {
+        border-radius: 25px;
+        font-weight: 500;
+        border: none;
+        padding: 8px 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .sidebar .stButton>button {
+        background: linear-gradient(135deg, #4a4af8 0%, #2a2af0 100%);
+        color: white;
+        border-radius: 12px;
+    }
+    
+    .select-button {
+        background: linear-gradient(135deg, #ff6d00 0%, #ff9100 100%);
+        color: white;
+        border-radius: 25px;
+        padding: 8px 16px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .select-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    h1, h2, h3 {
+        color: #333;
+        font-weight: 600;
+    }
+    
+    .testimonial-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 10px 0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    
+    .search-bar {
+        border-radius: 30px;
+        padding: 10px 20px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    /* Footer styling */
+    .footer {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+        padding: 30px;
+        border-radius: 10px;
+        margin-top: 50px;
+        text-align: center;
+    }
+    
+    /* Progress bar customization */
+    .stProgress > div > div > div > div {
+        background-color: #4a4af8;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -253,6 +342,133 @@ def generate_itinerary(destination, days, interests, budget_level):
     
     return itinerary
 
+def create_itinerary_pdf(destination, itinerary):
+    """Create a PDF document for the itinerary."""
+    buffer = io.BytesIO()
+    
+    # Create the PDF document
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+    
+    # Create a custom style for headings
+    styles.add(ParagraphStyle(
+        name='TitleStyle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor("#3f51b5"),
+        spaceAfter=20
+    ))
+    
+    styles.add(ParagraphStyle(
+        name='SubtitleStyle',
+        parent=styles['Heading2'],
+        fontSize=18,
+        textColor=colors.HexColor("#ff6d00"),
+        spaceAfter=15
+    ))
+    
+    styles.add(ParagraphStyle(
+        name='DayStyle',
+        parent=styles['Heading3'],
+        fontSize=16,
+        textColor=colors.HexColor("#2196f3"),
+        spaceAfter=10
+    ))
+    
+    story = []
+    
+    # Add title
+    title = Paragraph(f"Your {destination} Itinerary", styles['TitleStyle'])
+    story.append(title)
+    
+    # Add subtitle with date range
+    if itinerary and isinstance(itinerary[0], dict):
+        start_date = itinerary[0]["date"]
+        end_date = itinerary[-1]["date"]
+        subtitle = Paragraph(f"Travel dates: {start_date} to {end_date}", styles['SubtitleStyle'])
+        story.append(subtitle)
+    
+    story.append(Spacer(1, 0.25*inch))
+    
+    # Add destination info
+    if destination in TRAVEL_DATA:
+        dest_data = TRAVEL_DATA[destination]
+        story.append(Paragraph(f"About {destination}", styles['SubtitleStyle']))
+        story.append(Paragraph(dest_data["description"], styles['Normal']))
+        story.append(Spacer(1, 0.2*inch))
+        
+        # Add highlights
+        story.append(Paragraph("Key Highlights:", styles['Heading4']))
+        for highlight in dest_data["highlights"]:
+            story.append(Paragraph(f"• {highlight}", styles['Normal']))
+        
+        story.append(Spacer(1, 0.2*inch))
+        story.append(Paragraph(f"Best Time to Visit: {dest_data['best_time']}", styles['Normal']))
+        story.append(Paragraph(f"Budget Estimate: {dest_data['budget']}", styles['Normal']))
+        
+        story.append(Spacer(1, 0.5*inch))
+    
+    # Add daily itinerary
+    story.append(Paragraph("Your Day-by-Day Itinerary", styles['SubtitleStyle']))
+    
+    for day_plan in itinerary:
+        if isinstance(day_plan, dict):
+            # Add day header
+            day_title = Paragraph(f"Day {day_plan['day']} - {day_plan['date']}", styles['DayStyle'])
+            story.append(day_title)
+            
+            # Create a table for the day's activities
+            data = [
+                ["Time", "Activity"],
+                ["Morning", day_plan["morning"]],
+                ["Afternoon", day_plan["afternoon"]],
+                ["Evening", day_plan["evening"]]
+            ]
+            
+            table = Table(data, colWidths=[1.5*inch, 4*inch])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (1, 0), colors.HexColor("#e3f2fd")),
+                ('TEXTCOLOR', (0, 0), (1, 0), colors.HexColor("#0d47a1")),
+                ('ALIGN', (0, 0), (1, 0), 'CENTER'),
+                ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (1, 0), 12),
+                ('BOTTOMPADDING', (0, 0), (1, 0), 12),
+                ('BACKGROUND', (0, 1), (0, -1), colors.HexColor("#f5f5f5")),
+                ('GRID', (0, 0), (-1, -1), 1, colors.lightgrey),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('PADDING', (0, 0), (-1, -1), 8),
+            ]))
+            
+            story.append(table)
+            story.append(Spacer(1, 0.1*inch))
+            
+            # Add accommodation
+            story.append(Paragraph(f"Accommodation: {day_plan['accommodation']}", styles['Normal']))
+            
+            # Add day trip if available
+            if 'day_trip' in day_plan:
+                story.append(Paragraph(f"Special: {day_plan['day_trip']}", styles['Normal']))
+            
+            story.append(Spacer(1, 0.3*inch))
+        else:
+            # Handle error message case
+            story.append(Paragraph(day_plan, styles['Normal']))
+    
+    # Add footer with branding
+    story.append(Spacer(1, 0.5*inch))
+    footer_text = "Created with ❤️ by TravelPro | Your AI-powered travel companion"
+    footer = Paragraph(footer_text, styles['Italic'])
+    story.append(footer)
+    
+    # Build the PDF
+    doc.build(story)
+    
+    # Get the PDF data
+    pdf_data = buffer.getvalue()
+    buffer.close()
+    
+    return pdf_data
+
 # App state management
 if "page" not in st.session_state:
     st.session_state.page = "home"
@@ -264,6 +480,8 @@ if "selected_destination" not in st.session_state:
     st.session_state.selected_destination = None
 if "itinerary" not in st.session_state:
     st.session_state.itinerary = None
+if "itinerary_pdf" not in st.session_state:
+    st.session_state.itinerary_pdf = None
 
 # Sidebar navigation
 with st.sidebar:
@@ -275,12 +493,16 @@ with st.sidebar:
     
     if st.button("🏠 Home", use_container_width=True):
         st.session_state.page = "home"
+        st.rerun()
     if st.button("🔍 Explore Destinations", use_container_width=True):
         st.session_state.page = "explore"
+        st.rerun()
     if st.button("📝 Plan Itinerary", use_container_width=True):
         st.session_state.page = "itinerary"
+        st.rerun()
     if st.button("💬 Travel Assistant", use_container_width=True):
         st.session_state.page = "chat"
+        st.rerun()
     
     st.divider()
     
@@ -301,64 +523,155 @@ with st.sidebar:
 
 # Main content based on selected page
 if st.session_state.page == "home":
-    # Hero section
-    st.markdown('<div class="hero-section"><h1>TravelPro</h1><p>Discover, Plan, and Experience Perfect Travels</p></div>', unsafe_allow_html=True)
+    # Hero section with improved styling
+    st.markdown('''
+    <div class="hero-section">
+        <h1 style="font-size: 3.5rem; margin-bottom: 1rem;">TravelPro</h1>
+        <p style="font-size: 1.5rem; margin-bottom: 2rem;">Discover, Plan, and Experience Perfect Travels</p>
+        <div style="display: flex; justify-content: center; gap: 15px; margin-top: 25px;">
+            <button style="background: white; color: #3f51b5; border: none; border-radius: 30px; padding: 12px 25px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Start Planning</button>
+            <button style="background: rgba(255,255,255,0.15); color: white; border: 1px solid white; border-radius: 30px; padding: 12px 25px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Learn More</button>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
     
-    # Main features in columns
+    # Main features in columns with improved styling
+    st.markdown("### How TravelPro Works", unsafe_allow_html=True)
+    
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown('<div class="feature-card"><h3>🔍 Smart Search</h3><p>Find perfect destinations matching your preferences with Google-quality search.</p></div>', unsafe_allow_html=True)
+        st.markdown('''
+        <div class="feature-card">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <img src="https://cdn-icons-png.flaticon.com/512/4300/4300059.png" width="80">
+            </div>
+            <h3 style="text-align: center; color: #3f51b5;">🔍 Smart Search</h3>
+            <p style="text-align: center;">Find perfect destinations matching your preferences with Google-quality search.</p>
+        </div>
+        ''', unsafe_allow_html=True)
     
     with col2:
-        st.markdown('<div class="feature-card"><h3>📝 AI Itineraries</h3><p>Get personalized travel plans optimized for your time and interests.</p></div>', unsafe_allow_html=True)
+        st.markdown('''
+        <div class="feature-card">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <img src="https://cdn-icons-png.flaticon.com/512/2702/2702134.png" width="80">
+            </div>
+            <h3 style="text-align: center; color: #3f51b5;">📝 AI Itineraries</h3>
+            <p style="text-align: center;">Get personalized travel plans optimized for your time and interests.</p>
+        </div>
+        ''', unsafe_allow_html=True)
     
     with col3:
-        st.markdown('<div class="feature-card"><h3>💬 Travel Assistant</h3><p>Ask any travel question and get expert recommendations instantly.</p></div>', unsafe_allow_html=True)
+        st.markdown('''
+        <div class="feature-card">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <img src="https://cdn-icons-png.flaticon.com/512/3095/3095583.png" width="80">
+            </div>
+            <h3 style="text-align: center; color: #3f51b5;">💬 Travel Assistant</h3>
+            <p style="text-align: center;">Ask any travel question and get expert recommendations instantly.</p>
+        </div>
+        ''', unsafe_allow_html=True)
     
-    # Featured destinations carousel
-    st.markdown("### Featured Destinations")
+    # Stats section
+    st.markdown('''
+    <div style="display: flex; justify-content: space-between; margin: 40px 0; text-align: center;">
+        <div>
+            <h2 style="color: #3f51b5; font-weight: 700; margin-bottom: 10px;">500+</h2>
+            <p style="color: #666;">Destinations</p>
+        </div>
+        <div>
+            <h2 style="color: #3f51b5; font-weight: 700; margin-bottom: 10px;">20K+</h2>
+            <p style="color: #666;">Happy Travelers</p>
+        </div>
+        <div>
+            <h2 style="color: #3f51b5; font-weight: 700; margin-bottom: 10px;">98%</h2>
+            <p style="color: #666;">Satisfaction Rate</p>
+        </div>
+        <div>
+            <h2 style="color: #3f51b5; font-weight: 700; margin-bottom: 10px;">24/7</h2>
+            <p style="color: #666;">Support</p>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    # Featured destinations carousel with improved styling
+    st.markdown("<h3 style='margin-top: 40px;'>Featured Destinations</h3>", unsafe_allow_html=True)
     featured_cols = st.columns(3)
     
     for i, (dest, info) in enumerate(list(TRAVEL_DATA.items())[:3]):
         with featured_cols[i]:
-            st.image(info["image"], use_container_width=True)
-            st.markdown(f"**{dest}**")
-            st.markdown(f"{info['description'][:100]}...")
+            st.markdown(f'''
+            <div style="background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transition: transform 0.3s ease;">
+                <div style="height: 200px; overflow: hidden;">
+                    <img src="{info['image']}" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div style="padding: 20px;">
+                    <h4 style="color: #3f51b5; margin-bottom: 10px;">{dest}</h4>
+                    <p style="color: #666; font-size: 0.9rem; height: 80px; overflow: hidden;">{info['description'][:100]}...</p>
+                </div>
+            </div>
+            ''', unsafe_allow_html=True)
             if st.button(f"Explore {dest}", key=f"feat_{dest}"):
                 st.session_state.selected_destination = dest
                 st.session_state.page = "explore"
+                st.rerun()
     
-    # User testimonials
-    st.markdown("### What Our Users Say")
+    # User testimonials with improved styling
+    st.markdown("<h3 style='margin-top: 40px;'>What Our Users Say</h3>", unsafe_allow_html=True)
     reviews_cols = st.columns(3)
     
     with reviews_cols[0]:
-        st.markdown("""
-        ⭐⭐⭐⭐⭐
-        "TravelPro made planning my family vacation so easy! The AI suggestions were spot on."
-        - Amit S.
-        """)
+        st.markdown('''
+        <div class="testimonial-card">
+            <div style="color: #ffc107; margin-bottom: 10px;">⭐⭐⭐⭐⭐</div>
+            <p style="font-style: italic; color: #555;">"TravelPro made planning my family vacation so easy! The AI suggestions were spot on and saved us hours of research."</p>
+            <div style="display: flex; align-items: center; margin-top: 15px;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: #e1e1e1; margin-right: 10px;"></div>
+                <div>
+                    <p style="margin: 0; font-weight: 600;">Amit S.</p>
+                    <p style="margin: 0; font-size: 0.8rem; color: #777;">Delhi, India</p>
+                </div>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
     
     with reviews_cols[1]:
-        st.markdown("""
-        ⭐⭐⭐⭐⭐
-        "I discovered places I never knew existed. Best travel planning tool ever!"
-        - Priya R.
-        """)
+        st.markdown('''
+        <div class="testimonial-card">
+            <div style="color: #ffc107; margin-bottom: 10px;">⭐⭐⭐⭐⭐</div>
+            <p style="font-style: italic; color: #555;">"I discovered places I never knew existed. Best travel planning tool ever! The PDF itinerary was so helpful during our trip."</p>
+            <div style="display: flex; align-items: center; margin-top: 15px;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: #e1e1e1; margin-right: 10px;"></div>
+                <div>
+                    <p style="margin: 0; font-weight: 600;">Priya R.</p>
+                    <p style="margin: 0; font-size: 0.8rem; color: #777;">Mumbai, India</p>
+                </div>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
     
     with reviews_cols[2]:
-        st.markdown("""
-        ⭐⭐⭐⭐
-        "The itinerary generator saved me hours of research. Highly recommended!"
-        - Rahul K.
-        """)
+        st.markdown('''
+        <div class="testimonial-card">
+            <div style="color: #ffc107; margin-bottom: 10px;">⭐⭐⭐⭐</div>
+            <p style="font-style: italic; color: #555;">"The itinerary generator saved me hours of research. Highly recommended! Can't wait to use it for my next vacation."</p>
+            <div style="display: flex; align-items: center; margin-top: 15px;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: #e1e1e1; margin-right: 10px;"></div>
+                <div>
+                    <p style="margin: 0; font-weight: 600;">Rahul K.</p>
+                    <p style="margin: 0; font-size: 0.8rem; color: #777;">Bangalore, India</p>
+                </div>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
 
 elif st.session_state.page == "explore":
     st.title("Explore Destinations")
     
-    # Search bar
-    search_query = st.text_input("Search destinations, activities, or places", placeholder="Try 'beach destinations in India' or 'historical places'")
+    # Search bar with improved styling
+    search_query = st.text_input("Search destinations, activities, or places", 
+                               placeholder="Try 'beach destinations in India' or 'historical places'")
     
     if search_query:
         st.subheader(f"Search Results for: {search_query}")
@@ -383,7 +696,7 @@ elif st.session_state.page == "explore":
             col1, col2 = st.columns([1, 2])
             
             with col1:
-                st.image(data["image"], use_container_width=True)
+                st.image(data["image"], use_column_width=True)
             
             with col2:
                 st.subheader(dest)
@@ -404,6 +717,7 @@ elif st.session_state.page == "explore":
                 if st.button(f"Select {dest}", key=f"select_{dest}"):
                     st.session_state.selected_destination = dest
                     st.session_state.page = "itinerary"
+                    st.rerun()
             with col2:
                 st.button(f"View Details", key=f"details_{dest}", disabled=True)
             with col3:
@@ -436,13 +750,18 @@ elif st.session_state.page == "itinerary":
                 itinerary = generate_itinerary(selected_destination, trip_duration, [i.lower() for i in interests], budget_level)
                 st.session_state.itinerary = itinerary
                 st.session_state.selected_destination = selected_destination
+                
+                # Generate PDF
+                if isinstance(itinerary, list):
+                    pdf_data = create_itinerary_pdf(selected_destination, itinerary)
+                    st.session_state.itinerary_pdf = pdf_data
     
     with col2:
         if st.session_state.selected_destination:
             dest = st.session_state.selected_destination
             data = TRAVEL_DATA[dest]
             
-            st.image(data["image"], use_container_width=True)
+            st.image(data["image"], use_column_width=True)
             st.markdown(f"### About {dest}")
             st.markdown(data["description"])
             
@@ -487,15 +806,56 @@ elif st.session_state.page == "itinerary":
         
         col1, col2 = st.columns(2)
         with col1:
-            st.download_button("Download Itinerary (PDF)", "Itinerary PDF will be available in the full version", disabled=True)
+            if st.session_state.itinerary_pdf:
+                # Create a download button for the PDF
+                st.download_button(
+                    label="Download Itinerary PDF",
+                    data=st.session_state.itinerary_pdf,
+                    file_name=f"{st.session_state.selected_destination}_Itinerary.pdf",
+                    mime="application/pdf",
+                )
         with col2:
             st.button("Share Itinerary", disabled=True)
 
 elif st.session_state.page == "chat":
     st.title("TravelPro AI Assistant")
-    st.markdown("Ask me anything about travel planning, destinations, budgets, or itineraries")
     
-    # Display chat history
+    # Enhanced chat interface
+    st.markdown('''
+    <div style="background: linear-gradient(135deg, #8e24aa 0%, #3949ab 100%); padding: 20px; border-radius: 15px; color: white; margin-bottom: 30px;">
+        <h2 style="margin-top: 0;">Your Personal Travel Assistant</h2>
+        <p>Ask me anything about travel planning, destinations, budgets, or itineraries! I'm here to help make your next journey unforgettable.</p>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    # Suggested questions
+    if not st.session_state.chat_history:
+        st.markdown("<p>Need inspiration? Try asking:</p>", unsafe_allow_html=True)
+        
+        question_cols = st.columns(2)
+        with question_cols[0]:
+            if st.button("What's the best time to visit Goa?"):
+                user_msg, bot_response = query_llama3("What's the best time to visit Goa?")
+                st.session_state.chat_history.append((user_msg, bot_response))
+                st.rerun()
+            
+            if st.button("How much should I budget for a week in Delhi?"):
+                user_msg, bot_response = query_llama3("How much should I budget for a week in Delhi?")
+                st.session_state.chat_history.append((user_msg, bot_response))
+                st.rerun()
+        
+        with question_cols[1]:
+            if st.button("What are must-see attractions in Mumbai?"):
+                user_msg, bot_response = query_llama3("What are must-see attractions in Mumbai?")
+                st.session_state.chat_history.append((user_msg, bot_response))
+                st.rerun()
+            
+            if st.button("Suggest a 3-day itinerary for Jaipur"):
+                user_msg, bot_response = query_llama3("Suggest a 3-day itinerary for Jaipur")
+                st.session_state.chat_history.append((user_msg, bot_response))
+                st.rerun()
+    
+    # Display chat history with improved styling
     chat_container = st.container()
     with chat_container:
         for chat_msg in st.session_state.chat_history:
@@ -503,7 +863,12 @@ elif st.session_state.page == "chat":
             st.markdown(f'<div class="chat-message-user">👤 {user_msg}</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="chat-message-ai">🤖 {bot_response}</div>', unsafe_allow_html=True)
     
-    # User input
+    # User input with enhanced styling
+    st.markdown('''
+    <div style="background: white; border-radius: 15px; padding: 5px; margin-top: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+    </div>
+    ''', unsafe_allow_html=True)
+    
     user_query = st.chat_input("Type your travel question here...")
     if user_query:
         with st.spinner("Finding the best answer for you..."):
@@ -511,10 +876,32 @@ elif st.session_state.page == "chat":
             st.session_state.chat_history.append((user_msg, bot_response))
             st.rerun()  # Refresh the app to update chat history
 
-# Footer
+# Enhanced footer
 st.markdown("""
-<div style="text-align: center; padding: 20px; margin-top: 30px; border-top: 1px solid #ddd;">
-    <p>© 2025 TravelPro. Created by <a href="https://nandeshkalashetti.netlify.app/" target="_blank">Nandesh Kalashetti</a> | 
-    <a href="https://github.com/Universe7Nandu" target="_blank">GitHub</a></p>
+<div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 40px; border-radius: 15px; margin-top: 50px; text-align: center; box-shadow: 0 -5px 15px rgba(0,0,0,0.05);">
+    <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 30px;">
+        <div>
+            <h4>Explore</h4>
+            <p>Destinations</p>
+            <p>Itineraries</p>
+            <p>Travel Guides</p>
+        </div>
+        <div>
+            <h4>Company</h4>
+            <p>About Us</p>
+            <p>Careers</p>
+            <p>Contact</p>
+        </div>
+        <div>
+            <h4>Legal</h4>
+            <p>Terms of Service</p>
+            <p>Privacy Policy</p>
+            <p>Cookie Policy</p>
+        </div>
+    </div>
+    <div style="margin-top: 20px;">
+        <p>© 2025 TravelPro. Created by <a href="https://nandeshkalashetti.netlify.app/" target="_blank" style="color: #3f51b5; text-decoration: none; font-weight: 600;">Nandesh Kalashetti</a> | 
+        <a href="https://github.com/Universe7Nandu" target="_blank" style="color: #3f51b5; text-decoration: none; font-weight: 600;">GitHub</a></p>
+    </div>
 </div>
 """, unsafe_allow_html=True)

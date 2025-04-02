@@ -12,3 +12,4 @@ numpy
 pillow
 matplotlib
 tqdm
+reportlab
