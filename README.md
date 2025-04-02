@@ -9,7 +9,7 @@
   [![Instagram](https://img.shields.io/badge/Instagram-Follow-purple)](https://www.instagram.com/nandesh_kalshetti/)
 
   ### 🚀 Experience the Future of Travel Planning
-  [Watch Demo Video](YOUR_YOUTUBE_LINK_HERE) | [Live Demo](YOUR_LIVE_DEMO_LINK) | [Portfolio](https://nandeshkalashetti.netlify.app/)
+  [Watch Demo Video](https://youtu.be/yog_ib3aPNA) | [Live Demo](https://travelpro.streamlit.app/) | [Portfolio](https://nandeshkalashetti.netlify.app/)
 </div>
 
 ## 🎯 Project Overview
