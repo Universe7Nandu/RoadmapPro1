@@ -696,7 +696,7 @@ elif st.session_state.page == "explore":
             col1, col2 = st.columns([1, 2])
             
             with col1:
-                st.image(data["image"],  use_container_width=True)
+                st.image(data["image"], use_column_width=True)
             
             with col2:
                 st.subheader(dest)
@@ -761,7 +761,7 @@ elif st.session_state.page == "itinerary":
             dest = st.session_state.selected_destination
             data = TRAVEL_DATA[dest]
             
-            st.image(data["image"],  use_container_width=True)
+            st.image(data["image"], use_column_width=True)
             st.markdown(f"### About {dest}")
             st.markdown(data["description"])
             
@@ -878,30 +878,31 @@ elif st.session_state.page == "chat":
 
 # Enhanced footer
 st.markdown("""
-<div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 40px; border-radius: 15px; margin-top: 50px; text-align: center; box-shadow: 0 -5px 15px rgba(0,0,0,0.05);">
-    <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 30px;">
+<div style="margin-top: 60px; padding-top: 40px; border-top: 1px solid #e0e0e0;">
+    <div style="display: flex; justify-content: center; align-items: flex-start; flex-wrap: wrap; gap: 40px; margin-bottom: 30px; text-align: left;">
         <div>
-            <h4>Explore</h4>
-            <p>Destinations</p>
-            <p>Itineraries</p>
-            <p>Travel Guides</p>
+            <h4 style="color: #3f51b5; font-weight: 600; margin-bottom: 15px; font-size: 18px;">Explore</h4>
+            <p style="margin: 8px 0; color: #555; font-size: 14px; cursor: pointer;">Destinations</p>
+            <p style="margin: 8px 0; color: #555; font-size: 14px; cursor: pointer;">Itineraries</p>
+            <p style="margin: 8px 0; color: #555; font-size: 14px; cursor: pointer;">Travel Guides</p>
         </div>
         <div>
-            <h4>Company</h4>
-            <p>About Us</p>
-            <p>Careers</p>
-            <p>Contact</p>
+            <h4 style="color: #3f51b5; font-weight: 600; margin-bottom: 15px; font-size: 18px;">Company</h4>
+            <p style="margin: 8px 0; color: #555; font-size: 14px; cursor: pointer;">About Us</p>
+            <p style="margin: 8px 0; color: #555; font-size: 14px; cursor: pointer;">Careers</p>
+            <p style="margin: 8px 0; color: #555; font-size: 14px; cursor: pointer;">Contact</p>
         </div>
         <div>
-            <h4>Legal</h4>
-            <p>Terms of Service</p>
-            <p>Privacy Policy</p>
-            <p>Cookie Policy</p>
+            <h4 style="color: #3f51b5; font-weight: 600; margin-bottom: 15px; font-size: 18px;">Legal</h4>
+            <p style="margin: 8px 0; color: #555; font-size: 14px; cursor: pointer;">Terms of Service</p>
+            <p style="margin: 8px 0; color: #555; font-size: 14px; cursor: pointer;">Privacy Policy</p>
+            <p style="margin: 8px 0; color: #555; font-size: 14px; cursor: pointer;">Cookie Policy</p>
         </div>
     </div>
-    <div style="margin-top: 20px;">
-        <p>© 2025 TravelPro. Created by <a href="https://nandeshkalashetti.netlify.app/" target="_blank" style="color: #3f51b5; text-decoration: none; font-weight: 600;">Nandesh Kalashetti</a> | 
-        <a href="https://github.com/Universe7Nandu" target="_blank" style="color: #3f51b5; text-decoration: none; font-weight: 600;">GitHub</a></p>
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eaeaea;">
+        <p style="color: #777; font-size: 14px;">© 2025 TravelPro. Created by 
+        <a href="https://nandeshkalashetti.netlify.app/" target="_blank" style="color: #3f51b5; text-decoration: none; font-weight: 500;">Nandesh Kalashetti</a> | 
+        <a href="https://github.com/Universe7Nandu" target="_blank" style="color: #3f51b5; text-decoration: none; font-weight: 500;">GitHub</a></p>
     </div>
 </div>
 """, unsafe_allow_html=True)
