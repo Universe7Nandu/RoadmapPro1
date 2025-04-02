@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="travelpro.jpg" alt="TravelPro Banner" width="800px"/>
+  <img src="travelpro.png" alt="TravelPro Banner" width="800px"/>
   
   # 🌟 TravelPro - AI-Powered Travel Planning Platform
   
@@ -58,7 +58,7 @@ streamlit run app.py
 
 ## 🎥 Demo Video
 
-[![TravelPro Demo](path_to_thumbnail.jpg)](YOUR_YOUTUBE_LINK_HERE)
+[![TravelPro Demo](travelpro.png)](YOUR_YOUTUBE_LINK_HERE)
 
 Check out the full demo video to see TravelPro in action! 🎬
 
