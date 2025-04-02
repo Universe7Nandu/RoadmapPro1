@@ -161,7 +161,7 @@ try:
     chat = ChatGroq(
         model_name="llama3-70b-8192", 
         temperature=0.7, 
-        groq_api_key="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"
+        groq_api_key="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"
     )
 except Exception as e:
     st.error(f"⚠️ Chat model initialization failed: {str(e)}")
