@@ -52,8 +52,8 @@ streamlit run app.py
 ## 📸 Screenshots
 
 <div align="center">
-  <img src="travel1.jpg" alt="TravelPro Interface" width="400"/>
-  <img src="travel2.jpg" alt="Itinerary Generation" width="400"/>
+  <img src="trip1.jpg" alt="TravelPro Interface" width="400"/>
+  <img src="trip2.jpg" alt="Itinerary Generation" width="400"/>
 </div>
 
 ## 🎥 Demo Video
