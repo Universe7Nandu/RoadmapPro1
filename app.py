@@ -114,7 +114,7 @@ st.markdown("""
         color: #1B5E20;
     }
     .chat-message-ai {
-        background-color: #F3E5F5;
+        background-color:#fff;
         padding: 10px 15px;
         border-radius: 15px 15px 15px 0;
         margin: 5px 0;
