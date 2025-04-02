@@ -102,10 +102,6 @@ Check out the full demo video to see TravelPro in action! 🎬
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🌟 Show your support
 
 Give a ⭐️ if this project helped you!
