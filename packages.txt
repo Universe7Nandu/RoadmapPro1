@@ -1,1 +1,2 @@
-libgl1-mesa-glx
+build-essential
+python3-dev
