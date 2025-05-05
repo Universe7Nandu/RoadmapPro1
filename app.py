@@ -1,7 +1,7 @@
 import sys
 import pysqlite3
 sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
-
+import numpy as np
 import streamlit as st
 import chromadb
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -855,7 +855,10 @@ elif st.session_state.page == "chat":
                 user_msg, bot_response = query_llama3("Suggest a 3-day itinerary for Jaipur")
                 st.session_state.chat_history.append((user_msg, bot_response))
                 st.rerun()
-    
+
+    if not hasattr(np, "uint"):
+    # This patch sets `np.uint` to `np.uint32` if missing.
+    np.uint = np.uint32
     # Display chat history with improved styling
     chat_container = st.container()
     with chat_container:
