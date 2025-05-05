@@ -1,5 +1,4 @@
 streamlit
-chromadb
 langchain
 langchain-huggingface
 langchain-groq
@@ -13,7 +12,12 @@ pillow
 matplotlib
 tqdm
 reportlab
-
+protobuf==3.20.3
+opentelemetry-api==1.22.0
+opentelemetry-sdk==1.22.0
+opentelemetry-exporter-otlp==1.22.0
+opentelemetry-proto==1.22.0
+chromadb==0.4.21  # or your required version (latest stable)
 
 
 
