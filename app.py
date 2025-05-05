@@ -2,10 +2,6 @@ import sys
 import pysqlite3
 sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 import numpy as np
-# Patch numpy to define the legacy alias if it's missing.
-if not hasattr(np, "uint"):
-    np.uint = np.uint32
-
 import streamlit as st
 import chromadb
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -781,7 +777,7 @@ elif st.session_state.page == "itinerary":
         st.markdown(f"## Your {st.session_state.selected_destination} Itinerary")
         
         for day_plan in st.session_state.itinerary:
-            if isinstance(day_plan, dict):
+            if isinstance(day_plan, dict):  # Ensure it's a dictionary
                 with st.container():
                     st.markdown(f'<div class="itinerary-day">', unsafe_allow_html=True)
                     st.subheader(f"Day {day_plan['day']} - {day_plan['date']}")
@@ -807,11 +803,12 @@ elif st.session_state.page == "itinerary":
                     
                     st.markdown('</div>', unsafe_allow_html=True)
             else:
-                st.warning(day_plan)
+                st.warning(day_plan)  # Display error message
         
         col1, col2 = st.columns(2)
         with col1:
             if st.session_state.itinerary_pdf:
+                # Create a download button for the PDF
                 st.download_button(
                     label="Download Itinerary PDF",
                     data=st.session_state.itinerary_pdf,
@@ -824,6 +821,7 @@ elif st.session_state.page == "itinerary":
 elif st.session_state.page == "chat":
     st.title("TravelPro AI Assistant")
     
+    # Enhanced chat interface
     st.markdown('''
     <div style="background: linear-gradient(135deg, #8e24aa 0%, #3949ab 100%); padding: 20px; border-radius: 15px; color: white; margin-bottom: 30px;">
         <h2 style="margin-top: 0;">Your Personal Travel Assistant</h2>
@@ -858,6 +856,9 @@ elif st.session_state.page == "chat":
                 st.session_state.chat_history.append((user_msg, bot_response))
                 st.rerun()
 
+    if not hasattr(np, "uint"):
+    # This patch sets `np.uint` to `np.uint32` if missing.
+    np.uint = np.uint32
     # Display chat history with improved styling
     chat_container = st.container()
     with chat_container:
