@@ -1,6 +1,7 @@
 import sys
 import pysqlite3
 sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+
 import streamlit as st
 import chromadb
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -268,15 +269,14 @@ def retrieve_context(query, top_k=3):
 def query_llama3(user_query):
     """Query the Llama3 model with user input and retrieved context."""
     system_prompt = """
-   You are TravelPro Assistant, an advanced travel planning AI dedicated to crafting personalized itineraries and travel solutions. Your expertise includes:
-1.Tailored Itinerary Creation: Develop comprehensive, day-by-day travel plans that reflect the user's interests, available time, and pace.
-  Incorporate local insights, optimal activity sequences, and unique experiences.
-2.Destination Discovery: Analyze user preferences—such as climate, cultural interests, adventure levels, or relaxation needs—to recommend destinations that perfectly match their vision.
-3.Optimal Transportation Guidance: Advise on the best travel routes and modes—whether by flight, train, bus, or car—balancing cost, convenience, and time-efficiency.
-4.Budget Planning & Travel Tips: Provide clear, realistic budget estimates, breaking down costs for accommodations, transportation, food, and activities. Include practical tips
-  for saving money and enhancing the overall experience.
-5.Attractions & Hidden Gems: Highlight must-see landmarks, local attractions, and off-the-beaten-path experiences that will enrich the journey and create memorable moments.
-  Respond in a clear, concise, and engaging manner, ensuring that your recommendations are specific, insightful, and tailored to the user’s individual travel preferences.
+    You are 'TravelPro Assistant,' an intelligent travel planning AI. Your role is to help users:
+    1. Plan detailed itineraries based on their preferences
+    2. Find suitable destinations matching their criteria
+    3. Suggest optimal transport options and routes
+    4. Provide accurate budget estimates and travel tips
+    5. Recommend attractions, activities, and hidden gems
+    
+    Be specific, concise, and personalized in your recommendations.
     """
     
     # First, check if query matches any destination directly
@@ -696,7 +696,7 @@ elif st.session_state.page == "explore":
             col1, col2 = st.columns([1, 2])
             
             with col1:
-                st.image(data["image"], use_container_width=True)
+                st.image(data["image"], use_column_width=True)
             
             with col2:
                 st.subheader(dest)
@@ -761,7 +761,7 @@ elif st.session_state.page == "itinerary":
             dest = st.session_state.selected_destination
             data = TRAVEL_DATA[dest]
             
-            st.image(data["image"], use_container_width=True)
+            st.image(data["image"], use_column_width=True)
             st.markdown(f"### About {dest}")
             st.markdown(data["description"])
             
@@ -854,12 +854,12 @@ elif st.session_state.page == "chat":
                 user_msg, bot_response = query_llama3("Suggest a 3-day itinerary for Jaipur")
                 st.session_state.chat_history.append((user_msg, bot_response))
                 st.rerun()
-
+    
     # Display chat history with improved styling
     chat_container = st.container()
     with chat_container:
-        for chat_msg in st.session_state.chat_history:
-            user_msg, bot_response = chat_msg
+for chat_msg in st.session_state.chat_history:
+    user_msg, bot_response = chat_msg
             st.markdown(f'<div class="chat-message-user">👤 {user_msg}</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="chat-message-ai">🤖 {bot_response}</div>', unsafe_allow_html=True)
     
@@ -870,11 +870,11 @@ elif st.session_state.page == "chat":
     ''', unsafe_allow_html=True)
     
     user_query = st.chat_input("Type your travel question here...")
-    if user_query:
+if user_query:
         with st.spinner("Finding the best answer for you..."):
-            user_msg, bot_response = query_llama3(user_query)
-            st.session_state.chat_history.append((user_msg, bot_response))
-            st.rerun()  # Refresh the app to update chat history
+    user_msg, bot_response = query_llama3(user_query)
+    st.session_state.chat_history.append((user_msg, bot_response))
+    st.rerun()  # Refresh the app to update chat history
 
 # Enhanced footer
 st.markdown("""
